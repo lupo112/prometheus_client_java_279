@@ -1,0 +1,53 @@
+image: maven:3.5-jdk-8-alpine
+
+cache:
+  key: "PIPELINE-$CI_PIPELINE_ID"
+  paths:
+    - /root/.m2/
+
+maven:build:
+  stage: build
+  script:
+    - mvn -B -Pproduction -V clean compile
+  artifacts:
+    when: on_success
+    expire_in: 1 day
+    paths:
+      - target/
+
+maven:package:
+  stage: test
+  script:
+    - mvn -B -Pproduction package
+  dependencies:
+    - maven:build
+  artifacts:
+    when: on_success
+    expire_in: 1 day
+    paths:
+      - target/
+
+#deploy:production:
+#  image: maven:3.5-jdk-8
+##  image: google/cloud-sdk:latest
+#  stage: deploy
+#  environment:
+#    name: Production
+#    url: https://$PROJECT_ID_PRODUCTION.appspot.com
+#  script:
+#    - echo "deb http://packages.cloud.google.com/apt cloud-sdk-jessie main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list
+#    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+#    - apt-get update -yqq && apt-get install -yqq google-cloud-sdk
+#    - echo "$DEPLOY_KEY_FILE_PRODUCTION" > /tmp/$CI_PIPELINE_ID.json
+#    - gcloud auth activate-service-account --key-file /tmp/$CI_PIPELINE_ID.json
+#    - gcloud projects list
+#    - gcloud config set project $PROJECT_ID_PRODUCTION
+#    - ./mvnw -B -DskipTests appengine:deploy
+##    - gcloud app deploy
+#    - rm /tmp/$CI_PIPELINE_ID.json
+##  dependencies:
+##    - maven:package
+#  only:
+#    - master
+#  tags:
+#    - docker
